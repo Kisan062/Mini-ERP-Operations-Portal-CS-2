@@ -25,16 +25,19 @@ const referenceRoutes = require('./routes/reference.routes');
 
 const app = express();
 
+// Trust reverse proxy (Render, Vercel, Heroku, AWS load balancers)
+app.set('trust proxy', 1);
+
 // ─── Connect Database ─────────────────────────────────────────────────────────
 connectDB();
 
 // ─── Security Middleware ──────────────────────────────────────────────────────
 app.use(helmet());
 
-// Rate limiting (relaxed in development to prevent blocking during active testing)
+// Rate limiting (generous to allow active testing, evaluation, and dashboard usage)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'development' ? 10000 : 100,
+  max: 5000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests. Please try again later.' },
