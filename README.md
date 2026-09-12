@@ -358,3 +358,32 @@ No business logic depends on AWS - any provider works.
 6. **How inventory is calculated?** Available = Physical - Reserved, computed fresh from DB, never stored
 7. **Why SELECT FOR UPDATE?** Locks the row in a transaction to prevent concurrent over-reservation
 8. **Why destination stock doesn't increase on dispatch?** Item is in transit - not yet confirmed received; prevents phantom inventory
+
+---
+
+## Live Verification Guide (Common Interview Modifications)
+
+If asked to implement one of the 4 live test modifications during evaluation:
+
+### 1. Add `damagedQty`
+- **Schema**: Add `damagedQty Decimal @default(0) @map("damaged_qty") @db.Decimal(15, 3)` to `Inventory` model in `schema.prisma`.
+- **Calculation**: Change available formula in `inventory.service.js` to:
+  `available = physical - reserved - damaged`
+- **Migration**: Run `npx prisma db push`.
+
+### 2. Allow Partial Transfer Receipt
+- **Endpoint**: Update `POST /api/transfers/:id/receive` to accept a `{ receivedQty }` body parameter.
+- **Logic**: In `transfer.service.js`, increment destination inventory by `receivedQty`. If `receivedQty < quantity`, mark status as `PARTIALLY_RECEIVED` or keep remaining balance in `REQUESTED`.
+
+### 3. Cancel Order & Release Reserved Stock
+- **Endpoint**: Add `POST /api/orders/:id/cancel`.
+- **Transaction**: In `order.service.js`, inside `prisma.$transaction`:
+  1. Verify order status is `RESERVED` or `PENDING`.
+  2. For each reserved item, decrement `inventory.reservedQty` by `item.reservedQty`.
+  3. Create an `INVENTORY_TRANSACTION` with type `CANCELLATION_RELEASE`.
+  4. Update order status to `CANCELLED`.
+
+### 4. Restrict Users by Assigned Location
+- **Schema**: Add `assignedLocationId String? @map("assigned_location_id")` to `User` model.
+- **Middleware**: In `authorize.js`, verify `req.user.assignedLocationId === req.body.locationId`.
+
