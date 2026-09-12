@@ -1,0 +1,364 @@
+{
+  "info": {
+    "name": "Mini Operations ERP",
+    "description": "Complete API collection for Mini Operations ERP.\n\nIncludes: Authentication, Inventory, Work Orders, Stock Transfers, Customer Orders & Reservations.\n\nSetup:\n1. Set BASE_URL environment variable (e.g., http://localhost:5000)\n2. Login to get JWT_TOKEN\n3. Token is auto-set from login response via collection Pre-request script",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "BASE_URL", "value": "http://localhost:5000" },
+    { "key": "JWT_TOKEN", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login - Admin",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "var res = pm.response.json();",
+                "if(res.data && res.data.token) {",
+                "  pm.collectionVariables.set('JWT_TOKEN', res.data.token);",
+                "  console.log('Token set:', res.data.token.substring(0,20)+'...');",
+                "}"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@erp.com\",\n  \"password\": \"Admin@123\"\n}"
+            },
+            "url": "{{BASE_URL}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Login - Operations User",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "var res = pm.response.json();",
+                "if(res.data && res.data.token) pm.collectionVariables.set('JWT_TOKEN', res.data.token);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ops@erp.com\",\n  \"password\": \"Ops@123\"\n}"
+            },
+            "url": "{{BASE_URL}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Login - Sales User",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "var res = pm.response.json();",
+                "if(res.data && res.data.token) pm.collectionVariables.set('JWT_TOKEN', res.data.token);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"sales@erp.com\",\n  \"password\": \"Sales@123\"\n}"
+            },
+            "url": "{{BASE_URL}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": "{{BASE_URL}}/api/auth/profile"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reference Data",
+      "item": [
+        {
+          "name": "Get All Items",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": "{{BASE_URL}}/api/items"
+          }
+        },
+        {
+          "name": "Get All Locations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": "{{BASE_URL}}/api/locations"
+          }
+        },
+        {
+          "name": "Get All Categories",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": "{{BASE_URL}}/api/categories"
+          }
+        },
+        {
+          "name": "Get All Batches",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": "{{BASE_URL}}/api/batches"
+          }
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": "{{BASE_URL}}/api/users"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inventory",
+      "item": [
+        {
+          "name": "Get All Inventory",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": "{{BASE_URL}}/api/inventory",
+            "description": "Returns all inventory records with physicalQty, reservedQty, and availableQty (physical - reserved)"
+          }
+        },
+        {
+          "name": "Get Inventory by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": "{{BASE_URL}}/api/inventory/:id"
+          }
+        },
+        {
+          "name": "Create Inventory Record",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemId\": \"<item-uuid>\",\n  \"locationId\": \"<location-uuid>\",\n  \"batchId\": null,\n  \"physicalQty\": 100\n}"
+            },
+            "url": "{{BASE_URL}}/api/inventory",
+            "description": "OPERATIONS_USER or ADMIN only"
+          }
+        },
+        {
+          "name": "Add Stock",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inventoryId\": \"<inventory-uuid>\",\n  \"quantity\": 50,\n  \"notes\": \"Restock received\"\n}"
+            },
+            "url": "{{BASE_URL}}/api/inventory/add-stock"
+          }
+        },
+        {
+          "name": "Get Inventory Transactions",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": "{{BASE_URL}}/api/inventory/:id/transactions"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Work Orders",
+      "item": [
+        {
+          "name": "Get All Work Orders",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": "{{BASE_URL}}/api/work-orders",
+            "description": "Returns work orders with availableQty and shortage calculated"
+          }
+        },
+        {
+          "name": "Create Work Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemId\": \"<item-uuid>\",\n  \"locationId\": \"<location-uuid>\",\n  \"assignedUserId\": \"<user-uuid>\",\n  \"requiredQty\": 50,\n  \"notes\": \"Urgent production order\"\n}"
+            },
+            "url": "{{BASE_URL}}/api/work-orders",
+            "description": "ADMIN only. Backend calculates shortage = requiredQty - availableQty at that location"
+          }
+        },
+        {
+          "name": "Get Work Order by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": "{{BASE_URL}}/api/work-orders/:id"
+          }
+        },
+        {
+          "name": "Update Work Order Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"IN_PROGRESS\"\n}"
+            },
+            "url": "{{BASE_URL}}/api/work-orders/:id/status",
+            "description": "Valid transitions: ASSIGNED -> IN_PROGRESS -> COMPLETED"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Stock Transfers",
+      "item": [
+        {
+          "name": "Get All Transfers",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": "{{BASE_URL}}/api/transfers"
+          }
+        },
+        {
+          "name": "Create Transfer",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemId\": \"<item-uuid>\",\n  \"sourceLocationId\": \"<source-location-uuid>\",\n  \"destLocationId\": \"<dest-location-uuid>\",\n  \"quantity\": 30,\n  \"notes\": \"Transfer to production floor\"\n}"
+            },
+            "url": "{{BASE_URL}}/api/transfers",
+            "description": "OPERATIONS_USER only. Backend validates quantity against available stock at source."
+          }
+        },
+        {
+          "name": "Dispatch Transfer",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": "{{BASE_URL}}/api/transfers/:id/dispatch",
+            "description": "Reduces SOURCE inventory. Does NOT increase destination yet. Uses DB transaction."
+          }
+        },
+        {
+          "name": "Receive Transfer",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": "{{BASE_URL}}/api/transfers/:id/receive",
+            "description": "Increases DESTINATION inventory. Returns 409 if already received (DuplicateOperationError)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customer Orders",
+      "item": [
+        {
+          "name": "Get All Orders",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": "{{BASE_URL}}/api/orders"
+          }
+        },
+        {
+          "name": "Create Customer Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"Acme Corporation\",\n  \"notes\": \"Urgent delivery required\",\n  \"items\": [\n    {\n      \"itemId\": \"<item-uuid>\",\n      \"inventoryId\": \"<inventory-uuid>\",\n      \"requestedQty\": 60\n    }\n  ]\n}"
+            },
+            "url": "{{BASE_URL}}/api/orders",
+            "description": "SALES_USER only. Creates order in PENDING state. Stock not yet reserved."
+          }
+        },
+        {
+          "name": "Reserve Stock for Order",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": "{{BASE_URL}}/api/orders/:id/reserve",
+            "description": "SALES_USER only. Uses SELECT FOR UPDATE (row-level lock) to safely reserve stock. Returns 400 if insufficient stock, 409 if already reserved."
+          }
+        },
+        {
+          "name": "Get Order by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": "{{BASE_URL}}/api/orders/:id"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health & Docs",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{BASE_URL}}/health"
+          }
+        },
+        {
+          "name": "Swagger JSON",
+          "request": {
+            "method": "GET",
+            "url": "{{BASE_URL}}/api-docs.json"
+          }
+        }
+      ]
+    }
+  ]
+}
