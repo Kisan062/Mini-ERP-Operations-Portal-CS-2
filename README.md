@@ -8,6 +8,7 @@ A full-stack **Mini Operations ERP** system built with React.js, Node.js, Expres
 
 | Service | Live URL |
 |---|---|
+| 🌐 **Frontend App** | [https://mini-erp-operations-portal-cs-2.vercel.app](https://mini-erp-operations-portal-cs-2.vercel.app) |
 | ⚙️ **Backend API** | [https://mini-erp-operations-portal-cs-2.onrender.com](https://mini-erp-operations-portal-cs-2.onrender.com) |
 | 📖 **Swagger API Docs** | [https://mini-erp-operations-portal-cs-2.onrender.com/api-docs](https://mini-erp-operations-portal-cs-2.onrender.com/api-docs) |
 | 🏥 **Health Check** | [https://mini-erp-operations-portal-cs-2.onrender.com/health](https://mini-erp-operations-portal-cs-2.onrender.com/health) |
