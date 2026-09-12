@@ -34,16 +34,6 @@ connectDB();
 // ─── Security Middleware ──────────────────────────────────────────────────────
 app.use(helmet());
 
-// Rate limiting (generous to allow active testing, evaluation, and dashboard usage)
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5000,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, message: 'Too many requests. Please try again later.' },
-});
-app.use('/api/', limiter);
-
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 const allowedOrigins = process.env.CLIENT_URL
   ? process.env.CLIENT_URL.split(',').map((u) => u.trim())
