@@ -9,7 +9,7 @@
  * - Uses PostgreSQL transactions for dispatch & receive
  */
 
-const { prisma } = require('../config/database');
+const { prisma, getTableName } = require('../config/database');
 const {
   NotFoundError,
   InsufficientStockError,
@@ -135,8 +135,9 @@ const dispatchTransfer = async (id) => {
 
   const result = await prisma.$transaction(async (tx) => {
     // Lock the source inventory row to prevent concurrent modifications
+    const inventoryTable = getTableName('inventory');
     const sourceInvRows = await tx.$queryRaw`
-      SELECT * FROM inventory
+      SELECT * FROM ${inventoryTable}
       WHERE item_id = ${transfer.itemId}
         AND location_id = ${transfer.sourceLocationId}
       LIMIT 1

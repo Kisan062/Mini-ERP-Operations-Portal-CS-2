@@ -13,7 +13,7 @@
  * 6. COMMIT (or ROLLBACK on failure)
  */
 
-const { prisma } = require('../config/database');
+const { prisma, getTableName } = require('../config/database');
 const {
   NotFoundError,
   InsufficientStockError,
@@ -143,8 +143,9 @@ const reserveOrder = async (orderId) => {
 
       // ─── LOCK the inventory row ───────────────────────────────────────────
       // This prevents concurrent transactions from reading stale data
+      const inventoryTable = getTableName('inventory');
       const invRows = await tx.$queryRaw`
-        SELECT * FROM inventory WHERE id = ${orderItem.inventoryId} FOR UPDATE
+        SELECT * FROM ${inventoryTable} WHERE id = ${orderItem.inventoryId} FOR UPDATE
       `;
       const inv = invRows[0];
 

@@ -8,7 +8,7 @@ import axios from 'axios';
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'https://mini-erp-operations-portal-cs-2.onrender.com',
   headers: { 'Content-Type': 'application/json' },
-  timeout: 15000,
+  timeout: 60000,
 });
 
 // ─── Request Interceptor: Attach JWT ──────────────────────────
