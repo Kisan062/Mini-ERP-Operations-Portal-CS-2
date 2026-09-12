@@ -1,0 +1,258 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  OPERATIONS_USER
+  SALES_USER
+}
+
+enum WorkOrderStatus {
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum TransferStatus {
+  REQUESTED
+  DISPATCHED
+  RECEIVED
+}
+
+enum OrderStatus {
+  PENDING
+  RESERVED
+  COMPLETED
+  CANCELLED
+}
+
+// ─────────────────────────────────────────────
+// USERS
+// ─────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  passwordHash String   @map("password_hash")
+  role         UserRole
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  workOrders     WorkOrder[]
+  customerOrders CustomerOrder[]
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────
+// REFERENCE DATA
+// ─────────────────────────────────────────────
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  items Item[]
+
+  @@map("categories")
+}
+
+model Item {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  description String?
+  unit        String   @default("PCS")
+  categoryId  String   @map("category_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  category           Category            @relation(fields: [categoryId], references: [id])
+  inventory          Inventory[]
+  workOrders         WorkOrder[]
+  stockTransfers     StockTransfer[]
+  customerOrderItems CustomerOrderItem[]
+
+  @@index([categoryId])
+  @@map("items")
+}
+
+model Location {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  inventory            Inventory[]
+  workOrders           WorkOrder[]
+  sourceTransfers      StockTransfer[] @relation("SourceLocation")
+  destinationTransfers StockTransfer[] @relation("DestinationLocation")
+
+  @@map("locations")
+}
+
+model Batch {
+  id                String    @id @default(uuid())
+  batchNumber       String    @unique @map("batch_number")
+  expiryDate        DateTime? @map("expiry_date")
+  manufacturingDate DateTime? @map("manufacturing_date")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  inventory Inventory[]
+
+  @@map("batches")
+}
+
+// ─────────────────────────────────────────────
+// INVENTORY
+// ─────────────────────────────────────────────
+
+model Inventory {
+  id          String   @id @default(uuid())
+  itemId      String   @map("item_id")
+  locationId  String   @map("location_id")
+  batchId     String?  @map("batch_id")
+  physicalQty Decimal  @default(0) @map("physical_qty") @db.Decimal(15, 3)
+  reservedQty Decimal  @default(0) @map("reserved_qty") @db.Decimal(15, 3)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  item         Item      @relation(fields: [itemId], references: [id])
+  location     Location  @relation(fields: [locationId], references: [id])
+  batch        Batch?    @relation(fields: [batchId], references: [id])
+  transactions InventoryTransaction[]
+  orderItems   CustomerOrderItem[]
+
+  @@unique([itemId, locationId, batchId])
+  @@index([itemId])
+  @@index([locationId])
+  @@map("inventory")
+}
+
+model InventoryTransaction {
+  id              String   @id @default(uuid())
+  inventoryId     String   @map("inventory_id")
+  transactionType String   @map("transaction_type")
+  quantity        Decimal  @db.Decimal(15, 3)
+  referenceType   String?  @map("reference_type")
+  referenceId     String?  @map("reference_id")
+  notes           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  inventory Inventory @relation(fields: [inventoryId], references: [id])
+
+  @@index([inventoryId])
+  @@index([referenceId])
+  @@map("inventory_transactions")
+}
+
+// ─────────────────────────────────────────────
+// WORK ORDERS
+// ─────────────────────────────────────────────
+
+model WorkOrder {
+  id             String          @id @default(uuid())
+  orderNumber    String          @unique @map("order_number")
+  itemId         String          @map("item_id")
+  locationId     String          @map("location_id")
+  assignedUserId String          @map("assigned_user_id")
+  requiredQty    Decimal         @map("required_qty") @db.Decimal(15, 3)
+  status         WorkOrderStatus @default(ASSIGNED)
+  notes          String?
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  item         Item     @relation(fields: [itemId], references: [id])
+  location     Location @relation(fields: [locationId], references: [id])
+  assignedUser User     @relation(fields: [assignedUserId], references: [id])
+
+  @@index([status])
+  @@index([assignedUserId])
+  @@map("work_orders")
+}
+
+// ─────────────────────────────────────────────
+// STOCK TRANSFERS
+// ─────────────────────────────────────────────
+
+model StockTransfer {
+  id               String         @id @default(uuid())
+  transferNumber   String         @unique @map("transfer_number")
+  itemId           String         @map("item_id")
+  sourceLocationId String         @map("source_location_id")
+  destLocationId   String         @map("dest_location_id")
+  quantity         Decimal        @db.Decimal(15, 3)
+  status           TransferStatus @default(REQUESTED)
+  dispatchedAt     DateTime?      @map("dispatched_at")
+  receivedAt       DateTime?      @map("received_at")
+  notes            String?
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  item           Item     @relation(fields: [itemId], references: [id])
+  sourceLocation Location @relation("SourceLocation", fields: [sourceLocationId], references: [id])
+  destLocation   Location @relation("DestinationLocation", fields: [destLocationId], references: [id])
+
+  @@index([status])
+  @@index([itemId])
+  @@map("stock_transfers")
+}
+
+// ─────────────────────────────────────────────
+// CUSTOMER ORDERS
+// ─────────────────────────────────────────────
+
+model CustomerOrder {
+  id           String      @id @default(uuid())
+  orderNumber  String      @unique @map("order_number")
+  customerName String      @map("customer_name")
+  createdById  String      @map("created_by_id")
+  status       OrderStatus @default(PENDING)
+  notes        String?
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  createdBy  User                @relation(fields: [createdById], references: [id])
+  orderItems CustomerOrderItem[]
+
+  @@index([status])
+  @@map("customer_orders")
+}
+
+model CustomerOrderItem {
+  id           String    @id @default(uuid())
+  orderId      String    @map("order_id")
+  itemId       String    @map("item_id")
+  inventoryId  String    @map("inventory_id")
+  requestedQty Decimal   @map("requested_qty") @db.Decimal(15, 3)
+  reservedQty  Decimal   @default(0) @map("reserved_qty") @db.Decimal(15, 3)
+  isReserved   Boolean   @default(false) @map("is_reserved")
+  reservedAt   DateTime? @map("reserved_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  order     CustomerOrder @relation(fields: [orderId], references: [id])
+  item      Item          @relation(fields: [itemId], references: [id])
+  inventory Inventory     @relation(fields: [inventoryId], references: [id])
+
+  @@index([orderId])
+  @@index([inventoryId])
+  @@map("customer_order_items")
+}
